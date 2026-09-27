@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#08131d">
+  <title>Метеокарта — опасные явления</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">М</span>
+      <div><h1>Метеокарта</h1><p>Опасные явления</p></div>
+    </div>
+    <div class="header-actions">
+      <div class="freshness"><span id="statusDot" class="status-dot loading"></span><span id="statusText">Загрузка данных…</span></div>
+      <button id="refreshButton" class="icon-button refresh" title="Обновить данные" aria-label="Обновить данные">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8.1 8.1 0 0 0-14.9-4L3 10m0 0V4m0 6h6M4 13a8.1 8.1 0 0 0 14.9 4l2.1-3m0 0v6m0-6h-6"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <section id="viewer" class="viewer" aria-label="Карта опасных явлений">
+      <div class="grid-bg"></div>
+      <div id="stage" class="stage">
+        <img id="frameImage" alt="Карта опасных явлений" draggable="false">
+      </div>
+      <div id="emptyState" class="empty-state">
+        <div class="radar-loader"></div><strong>Получаем свежую карту</strong><span>Сервер разбирает GIF на кадры</span>
+      </div>
+      <div class="zoom-controls">
+        <button id="zoomIn" aria-label="Приблизить">+</button>
+        <button id="resetZoom" aria-label="Исходный размер, пиксель в пиксель" title="Исходный размер 1:1"><span id="zoomValue">100%</span></button>
+        <button id="zoomOut" aria-label="Отдалить">−</button>
+      </div>
+      <div class="hint">Колесо или щипок — масштаб · перетаскивание — обзор</div>
+    </section>
+
+    <section class="timeline" aria-label="Управление кадрами">
+      <div class="timeline-head">
+        <div><span class="eyebrow">КАДР</span><strong><span id="currentFrame">—</span> / <span id="totalFrames">—</span></strong></div>
+        <div class="utc"><span class="eyebrow">ОБНОВЛЕНО, UTC</span><strong id="updatedAt">—</strong></div>
+      </div>
+      <input id="frameSlider" type="range" min="0" max="0" value="0" aria-label="Номер кадра" disabled>
+      <div class="frame-controls">
+        <button id="firstFrame" class="secondary" aria-label="Первый кадр">|‹</button>
+        <button id="prevFrame" class="primary" aria-label="Предыдущий кадр"><span>←</span><em>Назад</em></button>
+        <button id="playButton" class="play" aria-label="Запустить анимацию"><span id="playIcon">▶</span></button>
+        <button id="nextFrame" class="primary" aria-label="Следующий кадр"><em>Вперёд</em><span>→</span></button>
+        <button id="lastFrame" class="secondary" aria-label="Последний кадр">›|</button>
+      </div>
+      <p class="schedule">Автообновление в <b>03, 13, 23, 33, 43, 53</b> минуты каждого часа по UTC</p>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status"></div>
+  <script src="/app.js" type="module"></script>
+</body>
+</html>
