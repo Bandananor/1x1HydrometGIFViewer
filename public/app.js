@@ -15,6 +15,7 @@ let fitScale = 1, userZoomed = false;
 let pointers = new Map();
 let dragStart = null, pinchStart = null;
 let toastTimer;
+let loadSeq = 0, lastSuccessAt = 0;
 
 function toast(message) {
   ui.toast.textContent = message; ui.toast.classList.add('show');
@@ -67,13 +68,14 @@ function playbackTick() {
 }
 function togglePlayback() { playing = !playing; ui.playIcon.textContent = playing ? 'Ⅱ' : '▶'; ui.play.setAttribute('aria-label', playing ? 'Остановить анимацию' : 'Запустить анимацию'); if (playing) playbackTick(); else clearTimeout(playTimer); }
 
-async function preloadFrames(data) {
-  const urls = await Promise.all(data.frames.map(async url => {
+async function fetchFrames(data) {
+  const blobs = await Promise.all(data.frames.map(async url => {
     const response = await fetch(`${url}?v=${data.version}`, { cache: 'no-store' });
     if (!response.ok) throw new Error('Один из кадров уже устарел');
-    return URL.createObjectURL(await response.blob());
+    return response.blob();
   }));
-  frameBlobs.forEach(URL.revokeObjectURL); frameBlobs = urls;
+  // Object URL создаём только когда скачаны все кадры, чтобы при ошибке ничего не утекло
+  return blobs.map(blob => URL.createObjectURL(blob));
 }
 
 function applyManifest(data) {
@@ -96,15 +98,32 @@ function showUnavailable(message) {
   setStatus('error', 'Нет свежих данных'); ui.slider.disabled = true;
 }
 
+class UnavailableError extends Error {}
+
 async function loadManifest({ quiet = false } = {}) {
+  const seq = ++loadSeq;
   try {
-    const response = await fetch(`/api/manifest?_=${Date.now()}`, { cache:'no-store' });
-    const data = await response.json();
+    let response, data;
+    try {
+      response = await fetch(`/api/manifest?_=${Date.now()}`, { cache:'no-store' });
+      data = await response.json();
+    } catch { throw new Error('Нет связи с сервером'); }
+    // 503 — сервер сам сообщает, что свежих данных нет; остальные ошибки считаем временными
+    if (response.status === 503) throw new UnavailableError(data.error || 'Свежих данных нет');
     if (!response.ok) throw new Error(data.error || 'Не удалось получить карту');
-    if (manifest?.version === data.version && frameBlobs.length === data.frameCount) { applyManifest(data); return; }
-    await preloadFrames(data); applyManifest(data);
+    if (seq !== loadSeq) return;
+    if (manifest?.version === data.version && frameBlobs.length === data.frameCount) { lastSuccessAt = Date.now(); applyManifest(data); return; }
+    const urls = await fetchFrames(data);
+    // Пока качали кадры, мог начаться более новый запрос — тогда этот результат устарел
+    if (seq !== loadSeq) { urls.forEach(URL.revokeObjectURL); return; }
+    frameBlobs.forEach(URL.revokeObjectURL); frameBlobs = urls;
+    lastSuccessAt = Date.now(); applyManifest(data);
   } catch (error) {
-    showUnavailable(error.message); if (!quiet) toast(error.message);
+    if (seq !== loadSeq) return;
+    const tooOld = manifest && Date.now() - lastSuccessAt > manifest.staleAfterMinutes * 60_000;
+    if (error instanceof UnavailableError || !manifest || tooOld) showUnavailable(error.message);
+    else setStatus('warning', `${error.message} · показана последняя карта`);
+    if (!quiet) toast(error.message);
   }
 }
 
@@ -113,6 +132,7 @@ async function manualRefresh() {
   try {
     const response = await fetch('/api/refresh', { method:'POST', cache:'no-store' });
     const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Ошибка обновления');
+    if (data.throttled) toast('Источник проверялся только что — показаны актуальные данные');
     await loadManifest();
   } catch (error) { toast(error.message); await loadManifest({ quiet:true }); }
   finally { ui.refresh.disabled = false; ui.refresh.classList.remove('spinning'); }
@@ -145,7 +165,7 @@ function pointerEnd(event) {
   dragStart = pointers.size === 1 ? { ...[...pointers.values()][0], panX, panY } : null; pinchStart = null;
 }
 ui.viewer.addEventListener('pointerup', pointerEnd); ui.viewer.addEventListener('pointercancel', pointerEnd);
-document.addEventListener('keydown', event => { if (event.key === 'ArrowLeft') { stopPlayback(); showFrame(index-1); } if (event.key === 'ArrowRight') { stopPlayback(); showFrame(index+1); } if (event.key === ' ') { event.preventDefault(); togglePlayback(); } });
+document.addEventListener('keydown', event => { if (event.target.closest('input, textarea, select')) return; if (event.key === 'ArrowLeft') { stopPlayback(); showFrame(index-1); } if (event.key === 'ArrowRight') { stopPlayback(); showFrame(index+1); } if (event.key === ' ') { event.preventDefault(); togglePlayback(); } });
 window.addEventListener('resize', () => { if (!userZoomed) fitToView(); });
 
 loadManifest();

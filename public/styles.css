@@ -9,7 +9,7 @@ button { color:inherit; }
 .brand-mark { display:grid; place-items:center; width:42px; height:42px; border:1px solid #287669; border-radius:13px; background:linear-gradient(145deg,#163f3d,#0c2428); color:var(--cyan2); font-weight:900; }
 h1,.brand p { margin:0; } h1 { font-size:17px; letter-spacing:.01em; }.brand p { margin-top:2px; color:var(--muted); font-size:12px; }
 .header-actions,.freshness { display:flex; align-items:center; gap:12px; }.freshness { color:#b3c6d0; font-size:13px; }
-.status-dot { width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 14px var(--cyan); }.status-dot.loading { animation:pulse 1.2s infinite; }.status-dot.error { background:var(--danger);box-shadow:0 0 12px var(--danger); }
+.status-dot { width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 14px var(--cyan); }.status-dot.loading { animation:pulse 1.2s infinite; }.status-dot.warning { background:#f5b942;box-shadow:0 0 12px #f5b942; }.status-dot.error { background:var(--danger);box-shadow:0 0 12px var(--danger); }
 .icon-button { width:42px;height:42px;display:grid;place-items:center;border:1px solid var(--line);border-radius:12px;background:#10222e;cursor:pointer;transition:.2s; }.icon-button:hover { border-color:#3c6776;background:#142b39; }.icon-button:disabled { opacity:.55;cursor:wait; }.icon-button svg { width:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round; }.refresh.spinning svg { animation:spin .8s linear infinite; }
 main { min-height:calc(100dvh - 76px); display:grid; grid-template-columns:minmax(0,1fr) 330px; }
 .viewer { position:relative; min-height:560px; overflow:hidden; display:grid;place-items:center;touch-action:none;background:#07121b; }

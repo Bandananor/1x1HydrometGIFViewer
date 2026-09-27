@@ -169,13 +169,13 @@ app.get('/api/frame/:version/:index.png', (req, res) => {
 
 app.post('/api/refresh', async (_req, res) => {
   const now = Date.now();
-  if (now - lastManualRefreshAt < MIN_MANUAL_REFRESH_INTERVAL_MS) {
-    return res.status(429).json({ error: 'Обновлять вручную можно раз в 30 секунд', ...publicStatus() });
-  }
-  lastManualRefreshAt = now;
+  // Лимит общий для всех посетителей, поэтому вместо ошибки отдаём результат последней проверки
+  const throttled = !refreshPromise && now - lastManualRefreshAt < MIN_MANUAL_REFRESH_INTERVAL_MS;
+  if (!throttled && !refreshPromise) lastManualRefreshAt = now;
   try {
-    await refresh('manual');
-    res.json(publicStatus());
+    if (!throttled) await refresh('manual');
+    if (throttled && lastError) throw new Error(lastError);
+    res.json({ ...publicStatus(), throttled });
   } catch {
     res.status(502).json({ error: lastError, ...publicStatus() });
   }
